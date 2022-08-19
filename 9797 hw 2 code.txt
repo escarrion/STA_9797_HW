@@ -1,0 +1,19 @@
+data _null_; 
+      rc=dlgcdir("Z:\OneDrive - Smart City Real Estate\Personal\Baruch\S5\STA 9797\HW\HW2");
+      put rc=;
+   run;
+options msglevel =I;
+run;
+
+proc import file = "fico.xlsx" dbms = xlsx out = fico replace;
+run;
+ods rtf file = "STA 9797 HW 2.rtf";
+ods graphics on;
+proc glm data = fico plots=diagnostics;
+	title "glm repeated by region";
+	class Region;
+	model _2017 - _2019 = Region;
+	repeated year 3 (1 2 3) profile / printe;
+run;
+ods graphics off;
+ods rtf close;
