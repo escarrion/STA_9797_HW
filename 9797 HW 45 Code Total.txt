@@ -1,0 +1,191 @@
+data _null_; 
+      rc=dlgcdir("Z:\OneDrive - Smart City Real Estate\Personal\Baruch\S5\STA 9797\HW\HW45");
+      put rc=;
+   run;
+
+proc import file = 'finches.xlsx' dbms = xlsx out = finches replace;
+run;
+
+/* Exploratory Data Analysis */
+
+/* Summary Statistics */
+ods rtf file="Finches EDA.rtf";
+proc means data = finches;
+	class Species;
+	var Beak_length Beak_width Beak_depth;
+	title "Summary Statistics for Finches Dataset";
+run;
+/* Scatterplot matrix and Normality Assessment */
+proc corr data = finches COV plots(maxpoints=NON)=matrix(histogram);
+	by Species;
+	var Beak_length Beak_width Beak_depth;
+	ods select MatrixPlot;
+	title "Scatterplot Matrix - Assessing Multivariate Normality";
+run;
+
+/* Create Boxplots to Identify Outliers */
+proc sgplot data = finches;
+	title "Boxplots of Beak Length";
+	hbox Beak_length/group=Species;
+run;
+proc sgplot data = finches;
+	title "Boxplots of Beak Width";
+	hbox Beak_width/group=Species;
+run;
+proc sgplot data = finches;
+	title "Boxplots of Beak Depth";
+	hbox Beak_depth/group=Species;
+run;
+
+/* Is there a trend over time? */
+proc sgplot data = finches;
+	title "Beak Length over Time";
+	xaxis type = discrete;
+	series x = Year y = Beak_length/ group = Species;
+run;
+proc sgplot data = finches;
+	title "Beak Width over Time";
+	xaxis type = discrete;
+	series x = Year y = Beak_width/ group = Species;
+run;
+proc sgplot data = finches;
+	title "Beak Depth over Time";
+	xaxis type = discrete;
+	series x = Year y = Beak_Depth/ group = Species;
+
+
+/* Linear Discriminant Analysis */
+proc discrim data = finches pool = test method = normal list canonical anova bcorr bcov; 
+	class Species;
+	var Beak_length Beak_depth Beak_width;
+	title "Linear Discriminant Classification Method = Normal";
+run;
+
+/* Logistic Regression */
+
+/* Test the Interactions */
+proc logistic data = finches;
+	title "Finches LogReg - 3Way Interaction Test";
+	class Species;
+	model Species = Beak_length*Beak_width*Beak_depth/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+/* Three way interaction is not significant */
+
+/* Test the 2 Way Interactions */
+proc logistic data = finches;
+	title "Finches LogReg - 2 Way Interaction Length*Width";
+	class Species;
+	model Species = Beak_length*Beak_width/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+proc logistic data = finches;
+	title "Finches LogReg - 2 Way Interaction Length*Depth";
+	class Species;
+	model Species = Beak_length*Beak_depth/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+/* Length*Depth not significant */
+
+proc logistic data = finches;
+	title "Finches LogReg - 2 Way Interaction - Width*Depth";
+	class Species;
+	model Species = Beak_width*Beak_depth/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+/* Length*Width not significant */
+
+/* All Interaction terms deemed not significant */
+/* Now look at first order models*/
+
+/* Full Model with and without regulariation */
+proc logistic data = finches plots=roc; 
+	title "Finches LogReg - Full Model w/o Regularization";
+	class Species;
+	model Species = Beak_length Beak_width Beak_depth/pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+proc logistic data = finches plots=roc; 
+	title "Finches LogReg - Full Model w/ Regularization";
+	class Species;
+	model Species = Beak_length Beak_width Beak_depth/ firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+/* Pairwise Models with and without regularization */
+
+/* Width & Depth */
+proc logistic data = finches plots=roc;
+	title "Finches LogReg Width and Depth no Regularization";
+	class Species;
+	model Species = Beak_width Beak_depth/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+proc logistic data = finches plots=roc;
+	title "Finches LogReg Width and Depth w/ Regularization";
+	class Species;
+	model Species = Beak_width Beak_depth/firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+/* Length & Depth */
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Length & Depth no regularization";
+	class Species;
+	model Species = Beak_length Beak_depth/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Length & Depth w/ regularization";
+	class Species;
+	model Species = Beak_length Beak_depth/firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+/* Length and Width */
+proc logistic data = finches plots=roc;
+	title "Finches LogReg Length and Width no regularization";
+	class Species;
+	model Species = Beak_length Beak_width/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+proc logistic data = finches plots=roc;
+	title "Finches LogReg Length and Width w/ regularization";
+	class Species;
+	model Species = Beak_length Beak_width/firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+
+/* Single Variable Models */
+
+/* Length Only */
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Length Only no regularization";
+	class Species;
+	model Species = Beak_length/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Length Only w/ regularization";
+	class Species;
+	model Species = Beak_length/ firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+
+/* Width Only */
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Width Only no regularization";
+	class Species;
+	model Species = Beak_width/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Width Only w/ regularization";
+	class Species;
+	model Species = Beak_width/firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+
+/* Depth only */
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Depth Only no regularization";
+	class Species;
+	model Species = Beak_depth/ pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+proc logistic data = finches plots=roc;
+	title "Finches LogReg - Depth Only w/ regularization";
+	class Species;
+	model Species = Beak_depth/ firth pprob=(0.05 to .50 by .05) ctable lackfit;
+run;
+
+/* Using only Width or Depth yield unacceptable results */
+/* As such, will not be considered in the analysis */
