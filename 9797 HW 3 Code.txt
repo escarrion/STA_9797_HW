@@ -1,0 +1,24 @@
+data _null_; 
+      rc=dlgcdir("Z:\OneDrive - Smart City Real Estate\Personal\Baruch\S5\STA 9797\HW\HW3");
+      put rc=;
+   run;
+
+   proc import file = "protein.xlsx" dbms = xlsx out = protein;
+   run;
+
+ods rtf file = "boxplot.rtf";
+proc sgplot data = protein;
+   	title "Protein by Food Preparation & Food Type";
+   	vbox protein / category = Preparation group = Food;
+run;
+ods rtf close;
+
+ods rtf file="2-Way ANOVA Protein Content.rtf";
+proc glm data = protein;
+	title "2 Way ANOVA - Random Effects Model";
+	class Preparation Food;
+	model Protein = Preparation Food Preparation*Food;
+	random Food;
+	means Preparation Food / Scheffe;
+run;
+ods rtf close;
